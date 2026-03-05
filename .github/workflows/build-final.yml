@@ -25,6 +25,27 @@ jobs:
         echo "安装Flutter依赖..."
         ./flutter/bin/flutter pub get 2>&1 | tail -20
         
+    - name: 🔧 验证Android配置
+      run: |
+        echo "验证Android配置..."
+        
+        # 检查AndroidManifest.xml
+        echo "检查AndroidManifest.xml..."
+        if grep -q "flutterEmbedding.*value=\"2\"" android/app/src/main/AndroidManifest.xml; then
+            echo "✅ Android嵌入v2配置正确"
+        else
+            echo "❌ 缺少flutterEmbedding v2配置，正在修复..."
+            echo '<meta-data android:name="flutterEmbedding" android:value="2" />' >> android/app/src/main/AndroidManifest.xml
+        fi
+        
+        # 检查MainActivity
+        echo "检查MainActivity..."
+        if [ -f "android/app/src/main/kotlin/com/example/android_spreadsheet/MainActivity.kt" ]; then
+            echo "✅ MainActivity存在"
+        else
+            echo "❌ MainActivity不存在"
+        fi
+        
     - name: 🔧 准备构建环境
       run: |
         echo "准备Android构建环境..."
@@ -35,7 +56,12 @@ jobs:
     - name: 🏗️ 构建APK
       run: |
         echo "开始构建APK..."
-        ./flutter/bin/flutter build apk --release --verbose 2>&1 | tail -50
+        
+        # 先运行doctor检查环境
+        ./flutter/bin/flutter doctor -v
+        
+        # 构建APK
+        ./flutter/bin/flutter build apk --release --verbose 2>&1 | tail -100
         
     - name: 📤 上传APK
       if: success()
