@@ -63,12 +63,13 @@ jobs:
         # 构建APK
         ./flutter/bin/flutter build apk --release --verbose 2>&1 | tail -100
         
-    - name: 📤 上传APK
-      if: success()
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: spreadsheet-app
-        path: build/app/outputs/flutter-apk/app-release.apk
+        name: my-app
+        # 通常 APK 位于 build/app/outputs/flutter-apk/ 或 build/app/outputs/apk/release/
+        path: |
+          build/app/outputs/apk/release/my-app.apk
         
     - name: 📋 生成报告
       if: always()
