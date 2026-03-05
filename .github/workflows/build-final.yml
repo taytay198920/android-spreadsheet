@@ -1,0 +1,60 @@
+name: Build APK (最终版)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 🎯 安装Flutter
+      run: |
+        echo "下载Flutter 3.19.0..."
+        wget -q https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.19.0-stable.tar.xz -O flutter.tar.xz
+        tar -xf flutter.tar.xz
+        rm flutter.tar.xz
+        echo "$(pwd)/flutter/bin" >> $GITHUB_PATH
+        
+    - name: 📦 安装项目依赖
+      run: |
+        echo "安装Flutter依赖..."
+        ./flutter/bin/flutter pub get 2>&1 | tail -20
+        
+    - name: 🔧 准备构建环境
+      run: |
+        echo "准备Android构建环境..."
+        # 创建local.properties
+        echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
+        echo "flutter.sdk=$(pwd)/flutter" >> android/local.properties
+        
+    - name: 🏗️ 构建APK
+      run: |
+        echo "开始构建APK..."
+        ./flutter/bin/flutter build apk --release --verbose 2>&1 | tail -50
+        
+    - name: 📤 上传APK
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: spreadsheet-app
+        path: build/app/outputs/flutter-apk/app-release.apk
+        
+    - name: 📋 生成报告
+      if: always()
+      run: |
+        echo "## 构建报告" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+          echo "✅ **构建成功!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📱 APK文件大小: $(ls -lh build/app/outputs/flutter-apk/app-release.apk | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **构建失败**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "请检查构建日志中的错误信息。" >> $GITHUB_STEP_SUMMARY
+        fi
