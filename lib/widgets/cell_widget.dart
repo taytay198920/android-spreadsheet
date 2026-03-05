@@ -1,0 +1,159 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/spreadsheet.dart';
+
+class CellWidget extends StatelessWidget {
+  final int row;
+  final int col;
+  
+  const CellWidget({
+    super.key,
+    required this.row,
+    required this.col,
+  });
+  
+  @override
+  Widget build(BuildContext context) {
+    final model = Provider.of<SpreadsheetModel>(context);
+    final cell = model.getCell(row, col);
+    final hasComment = model.hasComment(row, col);
+    
+    return GestureDetector(
+      onTap: () => _showEditDialog(context, row, col),
+      onLongPress: () => _showColorPicker(context, row, col),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cell.backgroundColor,
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        padding: const EdgeInsets.all(8.0),
+        child: Stack(
+          children: [
+            Text(
+              cell.text,
+              style: TextStyle(
+                color: _getContrastColor(cell.backgroundColor),
+                fontSize: 14,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (hasComment)
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.comment,
+                    size: 8,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Color _getContrastColor(Color backgroundColor) {
+    final luminance = backgroundColor.computeLuminance();
+    return luminance > 0.5 ? Colors.black : Colors.white;
+  }
+  
+  void _showEditDialog(BuildContext context, int row, int col) {
+    final model = Provider.of<SpreadsheetModel>(context, listen: false);
+    final cell = model.getCell(row, col);
+    final textController = TextEditingController(text: cell.text);
+    final commentController = TextEditingController(text: cell.comment ?? '');
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('编辑单元格'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: textController,
+                decoration: const InputDecoration(
+                  labelText: '文本内容',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                decoration: const InputDecoration(
+                  labelText: '备注 (可选)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                model.setCellText(row, col, textController.text);
+                model.setCellComment(row, col, commentController.text);
+                Navigator.pop(context);
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  
+  void _showColorPicker(BuildContext context, int row, int col) {
+    final model = Provider.of<SpreadsheetModel>(context, listen: false);
+    final cell = model.getCell(row, col);
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        Color selectedColor = cell.backgroundColor;
+        
+        return AlertDialog(
+          title: const Text('选择单元格颜色'),
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: selectedColor,
+              onColorChanged: (color) {
+                selectedColor = color;
+              },
+              showLabel: true,
+              pickerAreaHeightPercent: 0.8,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                model.setCellColor(row, col, selectedColor);
+                Navigator.pop(context);
+              },
+              child: const Text('应用'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

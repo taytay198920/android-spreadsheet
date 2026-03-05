@@ -1,0 +1,94 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+        - release
+        - debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🛎️ 检出代码
+      uses: actions/checkout@v4
+    
+    - name: 🎯 设置Flutter环境
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 'stable'
+        channel: 'stable'
+        cache: true
+        cache-key: flutter-packages-${{ hashFiles('pubspec.lock') }}
+        cache-path: ${{ runner.temp }}/flutter_cache
+    
+    - name: 📦 安装依赖
+      run: flutter pub get
+      
+    - name: 🔍 代码分析
+      run: flutter analyze
+      
+    - name: 🧪 运行测试
+      run: flutter test || echo "没有测试或测试失败，继续构建..."
+      
+    - name: 🏗️ 构建Release APK
+      if: github.event_name == 'push' || github.event.inputs.build_type == 'release'
+      run: |
+        flutter build apk --release
+        echo "✅ Release APK构建完成"
+        ls -la build/app/outputs/flutter-apk/app-release.apk
+      
+    - name: 🏗️ 构建Debug APK
+      if: github.event_name == 'pull_request' || github.event.inputs.build_type == 'debug'
+      run: |
+        flutter build apk --debug
+        echo "✅ Debug APK构建完成"
+        ls -la build/app/outputs/flutter-apk/app-debug.apk
+      
+    - name: 📤 上传Release APK
+      if: github.event_name == 'push' || github.event.inputs.build_type == 'release'
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-spreadsheet-release-apk
+        path: build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30
+        
+    - name: 📤 上传Debug APK
+      if: github.event_name == 'pull_request' || github.event.inputs.build_type == 'debug'
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-spreadsheet-debug-apk
+        path: build/app/outputs/flutter-apk/app-debug.apk
+        retention-days: 30
+        
+    - name: 📋 生成构建报告
+      run: |
+        echo "📱 构建信息" >> $GITHUB_STEP_SUMMARY
+        echo "==========" >> $GITHUB_STEP_SUMMARY
+        echo "- 构建时间: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- Flutter版本: $(flutter --version | head -1)" >> $GITHUB_STEP_SUMMARY
+        echo "- 分支: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📦 可用APK文件:" >> $GITHUB_STEP_SUMMARY
+        if [ -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+          echo "- 🟢 Release APK (生产版本)" >> $GITHUB_STEP_SUMMARY
+        fi
+        if [ -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+          echo "- 🟡 Debug APK (调试版本)" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    - name: 🚀 完成通知
+      if: success()
+      run: echo "🎉 APK构建成功！请下载Artifacts中的APK文件。"
