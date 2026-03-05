@@ -1,0 +1,107 @@
+name: Build Android APK (稳定版)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🛎️ 检出代码
+      uses: actions/checkout@v4
+    
+    - name: 🔧 安装Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: 🎯 手动安装Flutter
+      run: |
+        echo "📥 下载Flutter SDK..."
+        
+        # 使用固定的Flutter版本（3.19.0稳定版）
+        FLUTTER_VERSION="3.19.0"
+        
+        # 下载Flutter
+        wget -q "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" -O flutter.tar.xz
+        
+        # 解压
+        tar -xf flutter.tar.xz
+        rm flutter.tar.xz
+        
+        # 添加Flutter到PATH
+        echo "${GITHUB_WORKSPACE}/flutter/bin" >> $GITHUB_PATH
+        
+        # 显示版本
+        ./flutter/bin/flutter --version
+        
+        echo "✅ Flutter安装完成"
+        
+    - name: 📱 设置Android SDK
+      run: |
+        echo "🛠️ 设置Android SDK..."
+        
+        # 接受Android SDK许可证
+        yes | ./flutter/bin/flutter doctor --android-licenses || true
+        
+        echo "✅ Android SDK设置完成"
+        
+    - name: 📦 安装项目依赖
+      run: |
+        echo "📦 安装项目依赖..."
+        ./flutter/bin/flutter pub get
+        
+        echo "✅ 依赖安装完成"
+        
+    - name: 🔍 检查Flutter环境
+      run: |
+        echo "🔍 检查Flutter环境..."
+        ./flutter/bin/flutter doctor -v
+        
+    - name: 🏗️ 构建Release APK
+      run: |
+        echo "🏗️ 开始构建Release APK..."
+        
+        # 构建APK
+        ./flutter/bin/flutter build apk --release
+        
+        # 检查文件
+        echo "📁 构建结果:"
+        ls -la build/app/outputs/flutter-apk/
+        
+        echo "✅ Release APK构建完成"
+        
+    - name: 📤 上传APK文件
+      uses: actions/upload-artifact@v4
+      with:
+        name: spreadsheet-app-release
+        path: build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30
+        
+    - name: 📋 构建报告
+      run: |
+        echo "## 🎉 构建成功!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**APK文件已生成:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 📱 `app-release.apk` (可在Artifacts中下载)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**构建信息:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 🕒 构建时间: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- 🔧 Flutter版本: 3.19.0" >> $GITHUB_STEP_SUMMARY
+        echo "- 📍 分支: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**安装说明:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. 下载上方的APK文件" >> $GITHUB_STEP_SUMMARY
+        echo "2. 传输到Android手机" >> $GITHUB_STEP_SUMMARY
+        echo "3. 允许'未知来源应用安装'" >> $GITHUB_STEP_SUMMARY
+        echo "4. 点击APK文件安装" >> $GITHUB_STEP_SUMMARY
+        
+    - name: 🚀 成功通知
+      if: success()
+      run: echo "🎉 APK构建成功！请下载Artifacts中的app-release.apk文件。"
