@@ -1,0 +1,71 @@
+name: Build APK (最简单版)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🛎️ 检出代码
+      uses: actions/checkout@v4
+    
+    - name: 🔧 安装Flutter
+      run: |
+        echo "📥 下载Flutter..."
+        wget -q "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.19.0-stable.tar.xz" -O flutter.tar.xz
+        tar -xf flutter.tar.xz
+        rm flutter.tar.xz
+        echo "${GITHUB_WORKSPACE}/flutter/bin" >> $GITHUB_PATH
+        
+    - name: 📱 准备Android环境
+      run: |
+        echo "🛠️ 准备Android环境..."
+        sudo apt-get update
+        sudo apt-get install -y openjdk-17-jdk
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        
+        # 创建必要的目录和文件
+        mkdir -p android/app/src/main/kotlin/com/example/android_spreadsheet
+        
+        # 创建local.properties
+        echo "sdk.dir=/usr/lib/android-sdk" > android/local.properties
+        echo "flutter.sdk=${GITHUB_WORKSPACE}/flutter" >> android/local.properties
+        
+    - name: 📦 安装依赖
+      run: |
+        echo "📦 安装Flutter依赖..."
+        ./flutter/bin/flutter pub get
+        
+    - name: 🏗️ 构建APK
+      run: |
+        echo "🏗️ 构建Android APK..."
+        
+        # 使用--no-tree-shake-icons避免图标问题
+        ./flutter/bin/flutter build apk --release --no-tree-shake-icons
+        
+        echo "✅ 构建完成"
+        ls -la build/app/outputs/flutter-apk/
+        
+    - name: 📤 上传APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: spreadsheet-apk-simple
+        path: build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30
+        
+    - name: 📋 构建报告
+      run: |
+        echo "## 🎉 APK构建成功！" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**下载链接:**" >> $GITHUB_STEP_SUMMARY
+        echo "- 📱 [app-release.apk](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**安装说明:**" >> $GITHUB_STEP_SUMMARY
+        echo "1. 点击上方链接下载APK" >> $GITHUB_STEP_SUMMARY
+        echo "2. 传输到Android手机" >> $GITHUB_STEP_SUMMARY
+        echo "3. 在设置中允许'未知来源应用安装'" >> $GITHUB_STEP_SUMMARY
+        echo "4. 安装并打开应用" >> $GITHUB_STEP_SUMMARY

@@ -47,8 +47,16 @@ jobs:
       run: |
         echo "🛠️ 设置Android SDK..."
         
+        # 设置Android SDK路径
+        export ANDROID_HOME=$HOME/Android/Sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+        
+        # 创建模拟的local.properties文件
+        echo "flutter.sdk=${GITHUB_WORKSPACE}/flutter" > android/local.properties
+        echo "sdk.dir=${ANDROID_HOME}" >> android/local.properties
+        
         # 接受Android SDK许可证
-        yes | ./flutter/bin/flutter doctor --android-licenses || true
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         
         echo "✅ Android SDK设置完成"
         

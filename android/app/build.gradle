@@ -28,8 +28,7 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 android {
     namespace "com.example.android_spreadsheet"
     compileSdkVersion flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
-
+    
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -45,15 +44,23 @@ android {
 
     defaultConfig {
         applicationId "com.example.android_spreadsheet"
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 21  // Android 5.0 Lollipop
+        targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        
+        // 添加多架构支持
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+        }
     }
 
     buildTypes {
         release {
             signingConfig signingConfigs.debug
+            // 启用代码压缩
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
