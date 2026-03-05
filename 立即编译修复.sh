@@ -1,3 +1,15 @@
+#!/bin/bash
+
+echo "🚨 立即修复编译错误"
+echo "=================="
+
+echo "🔧 修复方案：使用简化颜色选择器"
+
+# 备份原文件
+cp lib/widgets/cell_widget.dart lib/widgets/cell_widget.dart.backup
+
+# 创建简化的颜色选择器版本
+cat > lib/widgets/cell_widget.dart << 'EOF'
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/spreadsheet.dart';
@@ -203,3 +215,35 @@ class CellWidget extends StatelessWidget {
     );
   }
 }
+EOF
+
+echo "✅ 已创建简化颜色选择器"
+
+# 检查修复
+echo ""
+echo "🔍 检查修复结果："
+echo "1. 检查Color导入..."
+if grep -q "import.*material.dart" lib/models/spreadsheet.dart; then
+    echo "   ✅ spreadsheet.dart有Material导入"
+else
+    echo "   ❌ spreadsheet.dart缺少Material导入"
+fi
+
+echo "2. 检查ColorPicker使用..."
+if grep -q "ColorPicker" lib/widgets/cell_widget.dart; then
+    echo "   ❌ 仍有ColorPicker引用"
+else
+    echo "   ✅ 已移除ColorPicker"
+fi
+
+echo ""
+echo "📝 执行以下命令："
+echo "1. git add ."
+echo "2. git commit -m '修复编译错误：使用简化颜色选择器'"
+echo "3. git push"
+echo ""
+echo "🚀 修复说明："
+echo "- 移除了对flutter_colorpicker包的依赖"
+echo "- 使用内置的Grid颜色选择器"
+echo "- 提供8种基本颜色选择"
+echo "- 确保编译能通过"

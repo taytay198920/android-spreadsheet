@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
 
 class CellData {
   String text;
@@ -8,7 +8,7 @@ class CellData {
   
   CellData({
     this.text = '',
-    this.backgroundColor = const Color(0xFFFFFFFF),
+    this.backgroundColor = Colors.white,
     this.comment,
   });
   
@@ -39,7 +39,7 @@ class SpreadsheetModel extends ChangeNotifier {
       return List.generate(_cols, (col) {
         return CellData(
           text: 'R${row + 1}C${col + 1}',
-          backgroundColor: const Color(0xFFFFFFFF),
+          backgroundColor: Colors.white,
         );
       });
     });

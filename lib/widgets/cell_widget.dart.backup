@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/spreadsheet.dart';
 
 class CellWidget extends StatelessWidget {
@@ -20,7 +21,7 @@ class CellWidget extends StatelessWidget {
     
     return GestureDetector(
       onTap: () => _showEditDialog(context, row, col),
-      onLongPress: () => _showSimpleColorPicker(context, row, col),
+      onLongPress: () => _showColorPicker(context, row, col),
       child: Container(
         decoration: BoxDecoration(
           color: cell.backgroundColor,
@@ -118,84 +119,38 @@ class CellWidget extends StatelessWidget {
     );
   }
   
-  void _showSimpleColorPicker(BuildContext context, int row, int col) {
+  void _showColorPicker(BuildContext context, int row, int col) {
     final model = Provider.of<SpreadsheetModel>(context, listen: false);
     final cell = model.getCell(row, col);
-    
-    final colors = [
-      Colors.white,
-      Colors.red,
-      Colors.green,
-      Colors.blue,
-      Colors.yellow,
-      Colors.orange,
-      Colors.purple,
-      Colors.grey,
-    ];
-    
-    final colorNames = [
-      '白色',
-      '红色',
-      '绿色',
-      '蓝色',
-      '黄色',
-      '橙色',
-      '紫色',
-      '灰色',
-    ];
     
     showDialog(
       context: context,
       builder: (context) {
+        Color selectedColor = cell.backgroundColor;
+        
         return AlertDialog(
           title: const Text('选择单元格颜色'),
-          content: SizedBox(
-            width: 300,
-            child: GridView.builder(
-              shrinkWrap: true,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: colors.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    model.setCellColor(row, col, colors[index]);
-                    Navigator.pop(context);
-                  },
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: colors[index],
-                          border: Border.all(
-                            color: colors[index] == cell.backgroundColor 
-                              ? Colors.black 
-                              : Colors.grey,
-                            width: colors[index] == cell.backgroundColor ? 3 : 1,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        colorNames[index],
-                        style: const TextStyle(fontSize: 10),
-                      ),
-                    ],
-                  ),
-                );
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: selectedColor,
+              onColorChanged: (color) {
+                selectedColor = color;
               },
+              showLabel: true,
+              pickerAreaHeightPercent: 0.8,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                model.setCellColor(row, col, selectedColor);
+                Navigator.pop(context);
+              },
+              child: const Text('应用'),
             ),
           ],
         );
