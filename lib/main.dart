@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import 'models/spreadsheet.dart';
 import 'screens/spreadsheet_screen.dart';
